@@ -2,6 +2,13 @@
 time DEBUG=crawler node crawl.js
 ```
 
+deploy:
+
+```
+npm run build
+netlify deploy --prod --dir ./build
+```
+
 ---
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).

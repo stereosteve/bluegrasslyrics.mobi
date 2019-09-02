@@ -57,6 +57,8 @@ async function parseSongs() {
       songs.push(parseSong(html))
     })
     .on('end', () => {
+      songs.sort((a, b) => (a.title < b.title ? -1 : 1))
+
       const j = JSON.stringify(songs)
       fs.writeFileSync('src/songs.json', j)
     })
