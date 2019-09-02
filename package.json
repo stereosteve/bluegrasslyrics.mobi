@@ -33,5 +33,12 @@
     "semi": false,
     "singleQuote": true,
     "trailingComma": "es5"
+  },
+  "devDependencies": {
+    "cheerio": "^1.0.0-rc.3",
+    "debug": "^4.1.1",
+    "got": "^9.6.0",
+    "level": "^5.0.1",
+    "p-map": "^3.0.0"
   }
 }

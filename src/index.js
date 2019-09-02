@@ -11,8 +11,8 @@ function SongList({ children }) {
       <div className="SongList">
         {songs.map(song => {
           return (
-            <div className="item">
-              <Link to={`/song/${song.title}`}>{song.title}</Link>
+            <div className="item" key={song.slug}>
+              <Link to={`/song/${song.slug}`}>{song.title}</Link>
             </div>
           )
         })}
@@ -23,12 +23,12 @@ function SongList({ children }) {
 }
 
 function SongDetail({ id }) {
-  const song = songs.find(s => s.title === id)
+  const song = songs.find(s => s.slug === id)
   return (
     <div className="SongDetail">
       <div className="inner">
         <Link to="/">close</Link>
-        <h1>{id}</h1>
+        <h1>{song.title}</h1>
         <div dangerouslySetInnerHTML={{ __html: song.content }} />
       </div>
     </div>
