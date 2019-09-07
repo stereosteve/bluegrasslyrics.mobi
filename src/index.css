@@ -16,12 +16,38 @@ code {
     monospace;
 }
 
+.search-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 50px;
+  z-index: 1;
+  background: crimson;
+  padding: 10px 5px;
+}
+
+.search-bar input {
+  padding: 10px;
+  background: white;
+  border-radius: 0;
+  border: none;
+}
+
+.search-bar button {
+  background: white;
+  border: none;
+  padding: 10px 10px;
+  float: right;
+}
+
 .SongList {
-  background: #efefef;
+  margin-top: 50px;
 }
 
 .SongList .item {
-  margin: 10px;
+  border-bottom: 1px solid #ccc;
+  padding: 10px;
 }
 
 .SongList .item a {
