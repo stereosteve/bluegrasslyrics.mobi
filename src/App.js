@@ -30,11 +30,14 @@ function SongList({ children, stars }) {
   const updateQ = e => {
     setStarFilter(false)
     setQ(e.target.value)
+
+    // should be in some effect?
+    window.scroll(0, 0)
   }
 
   return (
     <div>
-      <div className="flex p-2 border-b-2 border-red-900 bg-red-800 fixed w-full top-0">
+      <div className="flex p-2 border-b-2 border-red-900 bg-orange-400 fixed w-full top-0">
         <input
           className="flex-grow border border-gray-500 rounded-none p-3 focus:outline-none focus:bg-yellow-100"
           type="text"
@@ -50,9 +53,15 @@ function SongList({ children, stars }) {
         >
           <Star on={starFilter} />
         </button>
+        <button
+          className="p-2 bg-white border border-gray-500 border-l-0"
+          onClick={() => window.location.reload()}
+        >
+          reload
+        </button>
       </div>
       <div className="pb-12">&nbsp;</div>
-      <div className="SongList">
+      <div className="">
         {songs.map(song => (
           <SongListItem
             song={song}
@@ -125,9 +134,8 @@ export default function App() {
   return (
     <div className="antialiased font-serif">
       <Router primary={false}>
-        <SongList path="/" stars={stars}>
-          <SongDetail path="song/:slug" stars={stars} toggleStar={toggleStar} />
-        </SongList>
+        <SongList path="/" stars={stars} />
+        <SongDetail path="song/:slug" stars={stars} toggleStar={toggleStar} />
       </Router>
     </div>
   )
