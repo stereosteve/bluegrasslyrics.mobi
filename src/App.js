@@ -1,17 +1,21 @@
-import { Link, Router } from '@reach/router'
+import { Link, Router, navigate } from '@reach/router'
 import React, { useState } from 'react'
 import allSongs from './songs.json'
-
-const cx = {}
-cx.button = ``
-cx.button_on = ``
+import { FixedSizeList as List } from 'react-window'
+import AutoSizer from 'react-virtualized-auto-sizer'
+import Div100vh from 'react-div-100vh'
 
 // on boot load existing stars from localstorage
 const initialStars = JSON.parse(localStorage.getItem('stars') || '{}')
 
-function SongList({ children, stars }) {
-  const [q, setQ] = useState('')
-  const [starFilter, setStarFilter] = useState(false)
+let scrollHack = 0
+
+function SongList({ location, stars }) {
+  const urlParams = new URLSearchParams(location.search)
+
+  const [q, setQ] = useState(urlParams.get('q') || '')
+  const starFilter = urlParams.get('stars') === '1'
+  const listRef = React.createRef()
 
   let songs = allSongs
   const filterQ = q.trim().toLowerCase()
@@ -23,23 +27,42 @@ function SongList({ children, stars }) {
   }
 
   const toggleStarFilter = () => {
-    setStarFilter(!starFilter)
+    const p = starFilter ? '/' : '/?stars=1'
     setQ('')
+    navigate(p, { replace: true })
   }
 
   const updateQ = e => {
-    setStarFilter(false)
     setQ(e.target.value)
+    navigate(`/?q=${encodeURIComponent(e.target.value)}`, { replace: true })
+    listRef.current.scrollTo(0)
+  }
 
-    // should be in some effect?
-    window.scroll(0, 0)
+  const Row = ({ index, style }) => {
+    const song = songs[index]
+    const isStarred = stars[song.slug]
+    return (
+      <div
+        className="p-3 flex border-b border-gray-400 font-bold"
+        style={style}
+      >
+        <Link to={`/song/${song.slug}`} className="flex-grow truncate">
+          {song.title}
+        </Link>
+        {isStarred && (
+          <span className="">
+            <Star />
+          </span>
+        )}
+      </div>
+    )
   }
 
   return (
-    <div>
-      <div className="flex p-2 border-b-2 border-red-900 bg-orange-400 fixed w-full top-0">
+    <Div100vh className="flex flex-col overflow-hidden">
+      <div className="flex p-2 border-b-2 border-orange-600 bg-orange-300">
         <input
-          className="flex-grow border border-gray-500 rounded-none p-3 focus:outline-none focus:bg-yellow-100"
+          className="flex-grow border border-gray-500 rounded-none p-3 bg-orange-100 focus:bg-white"
           type="text"
           placeholder="Search"
           value={q}
@@ -60,46 +83,43 @@ function SongList({ children, stars }) {
           reload
         </button>
       </div>
-      <div className="pb-12">&nbsp;</div>
-      <div className="">
-        {songs.map(song => (
-          <SongListItem
-            song={song}
-            isStarred={stars[song.slug]}
-            key={song.slug}
-          />
-        ))}
+
+      <div className="flex flex-grow">
+        <AutoSizer>
+          {({ width, height }) => (
+            <List
+              ref={listRef}
+              itemCount={songs.length}
+              itemSize={50}
+              width={width}
+              height={height}
+              initialScrollOffset={scrollHack}
+              onScroll={e => (scrollHack = e.scrollOffset)}
+            >
+              {Row}
+            </List>
+          )}
+        </AutoSizer>
       </div>
-      {children}
-    </div>
+    </Div100vh>
   )
 }
 
 const Star = ({ on = false }) => <span>{on ? '🌟' : '⭐'}</span>
-
-const SongListItem = ({ song, isStarred }) => {
-  return (
-    <div className="p-3 border-b border-gray-400 font-bold">
-      <Link to={`/song/${song.slug}`}>{song.title}</Link>
-      {isStarred && (
-        <span className="float-right">
-          <Star />
-        </span>
-      )}
-    </div>
-  )
-}
 
 function SongDetail({ slug, stars, toggleStar }) {
   const song = allSongs.find(s => s.slug === slug)
   const isStarred = stars[song.slug]
 
   return (
-    <div className="fixed top-0 w-full h-full bg-white overflow-auto z-10">
+    <div className="bg-white">
       <div className="flex p-2 bg-gray-200">
-        <Link to="/" className="flex p-2 w-32 text-center bg-gray-100">
-          ❌ Close
-        </Link>
+        <button
+          onClick={() => window.history.back()}
+          className="flex p-2 w-32 text-center bg-gray-100"
+        >
+          Back
+        </button>
         <button
           onClick={() => toggleStar(song)}
           className={`flex ml-2 p-2 w-32 focus:outline-none ${
@@ -132,11 +152,9 @@ export default function App() {
   }
 
   return (
-    <div className="antialiased font-serif">
-      <Router primary={false}>
-        <SongList path="/" stars={stars} />
-        <SongDetail path="song/:slug" stars={stars} toggleStar={toggleStar} />
-      </Router>
-    </div>
+    <Router>
+      <SongList path="/" stars={stars} />
+      <SongDetail path="song/:slug" stars={stars} toggleStar={toggleStar} />
+    </Router>
   )
 }
