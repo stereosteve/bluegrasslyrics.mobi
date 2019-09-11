@@ -1,9 +1,8 @@
 import { Link, Router, navigate } from '@reach/router'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import allSongs from './songs.json'
 import { FixedSizeList as List } from 'react-window'
 import AutoSizer from 'react-virtualized-auto-sizer'
-import Div100vh from 'react-div-100vh'
 
 // on boot load existing stars from localstorage
 const initialStars = JSON.parse(localStorage.getItem('stars') || '{}')
@@ -13,6 +12,7 @@ let scrollHack = 0
 function SongList({ location, stars }) {
   const urlParams = new URLSearchParams(location.search)
 
+  const [height, setHeight] = useState(window.innerHeight)
   const [q, setQ] = useState(urlParams.get('q') || '')
   const starFilter = urlParams.get('stars') === '1'
   const listRef = React.createRef()
@@ -32,11 +32,29 @@ function SongList({ location, stars }) {
     navigate(p, { replace: true })
   }
 
+  const showAllSongs = () => {
+    setQ('')
+    navigate('/', { replace: true })
+  }
+
   const updateQ = e => {
     setQ(e.target.value)
     navigate(`/?q=${encodeURIComponent(e.target.value)}`, { replace: true })
     listRef.current.scrollTo(0)
   }
+
+  // when running in PWA mode the 'resize' event will report the old size if you do
+  // portrait -> landscape -> portrait on ios
+  // so use a ticker to poll the innerHeight
+  useEffect(() => {
+    const ticker = setInterval(() => {
+      setHeight(window.innerHeight)
+    }, 500)
+
+    return () => {
+      clearInterval(ticker)
+    }
+  }, [])
 
   const Row = ({ index, style }) => {
     const song = songs[index]
@@ -59,29 +77,15 @@ function SongList({ location, stars }) {
   }
 
   return (
-    <Div100vh className="flex flex-col overflow-hidden">
-      <div className="flex p-2 border-b-2 border-orange-600 bg-orange-300">
+    <div className="flex flex-col" style={{ height }}>
+      <div className="flex p-2 border-b border-gray-600 bg-gray-300">
         <input
-          className="flex-grow border border-gray-500 rounded-none p-3 bg-orange-100 focus:bg-white"
+          className="flex-grow border border-gray-500 rounded-none p-1 bg-gray-100 rounded focus:bg-white"
           type="text"
           placeholder="Search"
           value={q}
           onChange={updateQ}
         />
-        <button
-          onClick={toggleStarFilter}
-          className={`flex p-3 border border-l-0 border-gray-500 focus:outline-none ${
-            starFilter ? 'bg-red-500' : 'bg-green-100'
-          }`}
-        >
-          <Star on={starFilter} />
-        </button>
-        <button
-          className="p-2 bg-white border border-gray-500 border-l-0"
-          onClick={() => window.location.reload()}
-        >
-          reload
-        </button>
       </div>
 
       <div className="flex flex-grow">
@@ -101,9 +105,31 @@ function SongList({ location, stars }) {
           )}
         </AutoSizer>
       </div>
-    </Div100vh>
+      <div className="flex bg-gray-300 border-t border-gray-600">
+        <TabItem
+          name="All Songs"
+          onClick={showAllSongs}
+          isActive={!starFilter}
+        />
+        <TabItem
+          name="Favorites"
+          onClick={toggleStarFilter}
+          isActive={starFilter}
+        />
+        <TabItem name="Reload" onClick={() => window.location.reload()} />
+      </div>
+    </div>
   )
 }
+
+const TabItem = ({ name, isActive, ...rest }) => (
+  <button
+    className={`flex-1 p-4 text-center ${isActive ? 'bg-orange-300' : ''}`}
+    {...rest}
+  >
+    {name}
+  </button>
+)
 
 const Star = ({ on = false }) => <span>{on ? '🌟' : '⭐'}</span>
 
