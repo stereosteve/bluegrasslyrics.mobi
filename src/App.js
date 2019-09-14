@@ -13,7 +13,6 @@ function SongList({ location, stars }) {
   const urlParams = new URLSearchParams(location.search)
 
   const [q, setQ] = useState(urlParams.get('q') || '')
-  const starFilter = urlParams.get('stars') === '1'
   const listRef = React.createRef()
 
   let songs = allSongs
@@ -21,24 +20,10 @@ function SongList({ location, stars }) {
   if (filterQ) {
     songs = songs.filter(s => s.title.toLowerCase().indexOf(filterQ) > -1)
   }
-  if (starFilter) {
-    songs = songs.filter(s => stars[s.slug])
-  }
-
-  const toggleStarFilter = () => {
-    const p = starFilter ? '/' : '/?stars=1'
-    setQ('')
-    navigate(p, { replace: true })
-  }
 
   useEffect(() => {
     listRef.current && listRef.current.scrollTo(0)
   }, [listRef, location])
-
-  const showAllSongs = () => {
-    setQ('')
-    navigate('/', { replace: true })
-  }
 
   const updateQ = e => {
     setQ(e.target.value)
@@ -47,62 +32,70 @@ function SongList({ location, stars }) {
 
   return (
     <div className="">
-      {starFilter ? (
-        <h1 className="p-3 text-xl font-bold border-b">Favorites</h1>
-      ) : (
-        <div className="fixed top-0 left-0 w-full z-1 p-2 bg-blue-300">
-          <input
-            className="w-full rounded p-2 py-1 bg-gray-300 rounded focus:bg-white border-b"
-            type="text"
-            placeholder="Search"
-            value={q}
-            onChange={updateQ}
-          />
-        </div>
-      )}
+      <div className="fixed top-0 left-0 w-full z-1 p-2 bg-gray-900">
+        <input
+          className="w-full rounded p-2 bg-gray-700 rounded text-white"
+          type="text"
+          placeholder="Search"
+          value={q}
+          onChange={updateQ}
+        />
+      </div>
 
-      <div className="fixed w-full" style={{ bottom: 60, top: 55 }}>
-        <Listy songs={songs} stars={stars} ref={listRef} />
+      <div className="fixed w-full" style={{ bottom: 60, top: 57 }}>
+        <FancyList songs={songs} stars={stars} ref={listRef} />
       </div>
-      <div className="fixed bottom-0 left-0 w-full z-1 flex bg-blue-300 border-t border-blue-400">
-        <TabItem
-          name="All Songs"
-          onClick={showAllSongs}
-          isActive={!starFilter}
-        />
-        <TabItem
-          name="Favorites"
-          onClick={toggleStarFilter}
-          isActive={starFilter}
-        />
-        <TabItem name="Reload" onClick={() => window.location.reload()} />
-      </div>
+
+      <TabBar active="songs" />
     </div>
   )
 }
 
-const Listy = React.forwardRef(({ songs, stars }, ref) => {
+const Favorites = ({ stars }) => {
+  const songs = allSongs.filter(s => stars[s.slug])
+
+  return (
+    <div>
+      <h1 className="text-3xl font-bold p-2">Favorites</h1>
+      <div>
+        {songs.map(song => (
+          <SongListItem
+            key={song.slug}
+            song={song}
+            isStarred={stars[song.slug]}
+          />
+        ))}
+      </div>
+      <TabBar active="stars" />
+    </div>
+  )
+}
+
+const SongListItem = ({ song, isStarred, style = {} }) => (
+  <div className="p-2 flex border-b" style={style}>
+    <Link to={`/song/${song.slug}`} className="flex-grow truncate">
+      {song.title}
+    </Link>
+    {isStarred && (
+      <span className="">
+        <Star />
+      </span>
+    )}
+  </div>
+)
+
+const FancyList = React.forwardRef(({ songs, stars }, ref) => {
   const Row = ({ index, style }) => {
     const song = songs[index]
     const isStarred = stars[song.slug]
-    return (
-      <div className="p-2 flex border-b" style={style}>
-        <Link to={`/song/${song.slug}`} className="flex-grow truncate">
-          {song.title}
-        </Link>
-        {isStarred && (
-          <span className="">
-            <Star />
-          </span>
-        )}
-      </div>
-    )
+    return <SongListItem song={song} isStarred={isStarred} style={style} />
   }
 
   return (
     <AutoSizer>
       {({ width, height }) => (
         <List
+          overscanCount={4}
           ref={ref}
           itemCount={songs.length}
           itemSize={42}
@@ -118,9 +111,33 @@ const Listy = React.forwardRef(({ songs, stars }, ref) => {
   )
 })
 
+const TabBar = ({ location, active }) => (
+  <div className="h-16">
+    <div className="fixed bottom-0 left-0 w-full z-1 flex bg-gray-900 border-t border-black">
+      <TabItem
+        name="All Songs"
+        onClick={() => navigate('/')}
+        isActive={active === 'songs'}
+      />
+      <TabItem
+        name="Favorites"
+        onClick={() => navigate('/stars')}
+        isActive={active === 'stars'}
+      />
+      <TabItem
+        name="About"
+        isActive={active === 'about'}
+        onClick={() => navigate('/about')}
+      />
+    </div>
+  </div>
+)
+
 const TabItem = ({ name, isActive, ...rest }) => (
   <button
-    className={`flex-1 p-4 text-center ${isActive ? 'bg-blue-500' : ''}`}
+    className={`flex-1 p-4 text-center text-white font-bold ${
+      isActive ? 'bg-blue-900' : ''
+    }`}
     {...rest}
   >
     {name}
@@ -135,21 +152,21 @@ function SongDetail({ slug, stars, toggleStar }) {
 
   return (
     <div className="bg-white">
-      <div className="flex p-2 bg-gray-200">
+      <div className="flex p-2 bg-gray-900 text-white justify-between">
         <button
           onClick={() => window.history.back()}
-          className="flex p-2 w-32 text-center bg-gray-100"
+          className="p-2 w-32 text-center bg-gray-800 rounded text-center"
         >
           Back
         </button>
         <button
           onClick={() => toggleStar(song)}
-          className={`flex ml-2 p-2 w-32 focus:outline-none ${
-            isStarred ? 'bg-green-300' : 'bg-gray-100'
+          className={`p-2 w-32 right rounded float-right text-center ${
+            isStarred ? 'bg-blue-700' : 'bg-gray-800'
           }`}
         >
           <Star on={isStarred} />
-          {isStarred ? 'Unstar' : 'Star'}
+          {isStarred ? 'Starred' : 'Star'}
         </button>
       </div>
 
@@ -164,6 +181,33 @@ function SongDetail({ slug, stars, toggleStar }) {
   )
 }
 
+const About = () => (
+  <div className="p-4 pb-64">
+    <h1 className="my-2 text-xl font-bold">Bluegrass Lyrics Mobile</h1>
+    <p className="my-2 leading-relaxed">
+      All the songs of{' '}
+      <a href="https://bluegrasslyrics.com">bluegrasslyrics.com</a> made
+      available offline.
+    </p>
+    <p className="my-2 leading-relaxed">
+      You can use the Add to Homescreen button to get an app icon and fullscreen
+      experience try it.
+    </p>
+
+    <div className="mt-8 py-4 border-t font-bold">
+      Danger Zone: <br />
+      <button
+        className="p-2 px-4 bg-red-900 text-white rounded shadow"
+        onClick={() => window.location.reload()}
+      >
+        Reload
+      </button>
+    </div>
+
+    <TabBar active="about" />
+  </div>
+)
+
 export default function App() {
   const [stars, setStars] = useState(initialStars)
 
@@ -174,9 +218,11 @@ export default function App() {
   }
 
   return (
-    <Router>
+    <Router primary={false}>
       <SongList path="/" stars={stars} />
+      <Favorites path="/stars" stars={stars} />
       <SongDetail path="song/:slug" stars={stars} toggleStar={toggleStar} />
+      <About path="/about" />
     </Router>
   )
 }
